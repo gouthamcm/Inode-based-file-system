@@ -20,7 +20,7 @@ struct inode
 {
     int size;
     int first_block;
-    char name[8];
+    char name[80];
 };
 
 struct disk_block
@@ -33,9 +33,11 @@ struct super_block sb;
 struct inode *inodes;
 struct disk_block *disk_blocks;
 
-void printfs(string diskname){
+
+void printfs(string diskname)
+{
     FILE *fp;
-    fp=fopen(&diskname[0], "r");
+    fp = fopen(&diskname[0], "r");
     fread(&sb, sizeof(super_block), 1, fp);
 
     for (int i = 0; i < sb.number_of_inodes; i++)
@@ -48,17 +50,22 @@ void printfs(string diskname){
         fread(&disk_blocks[i], sizeof(disk_block), 1, fp);
     }
 
-    cout<<"Super Block Info\n";
-    cout<<"Number of disk blocks\t"<<sb.number_of_diskblocks<<endl;
-    cout<<"Number of Inodes\t"<<sb.number_of_inodes<<endl;
-    cout<<"Size of blocks\t"<<sb.size_of_blocks<<endl;
-    cout<<"\nINODES\n\n";
-    for(int i=0; i<sb.number_of_inodes; i++){
-        cout<<"size: "<<inodes[i].size<<"\t"<<"first block: "<<inodes[i].first_block<<"\t"<<"name: "<<inodes[i].name<<endl;
+    cout << "Super Block Info\n";
+    cout << "Number of disk blocks\t" << sb.number_of_diskblocks << endl;
+    cout << "Number of Inodes\t" << sb.number_of_inodes << endl;
+    cout << "Size of blocks\t" << sb.size_of_blocks << endl;
+    cout << "\nINODES\n\n";
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
+        cout << "size: " << inodes[i].size << "\t"
+             << "first block: " << inodes[i].first_block << "\t"
+             << "name: " << inodes[i].name << endl;
     }
-    cout<<"\nDISK BLOCKS\n\n";
-    for(int i=0; i<sb.number_of_diskblocks; i++){
-        cout<<"Next Block: "<<disk_blocks[i].next_block_num<<"\tData: "<<disk_blocks[i].data<<endl;
+    cout << "\nDISK BLOCKS\n\n";
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
+        cout << "Block No.: " << i << "\t"
+             << "Next Block: " << disk_blocks[i].next_block_num << "\tData: " << disk_blocks[i].data << endl;
     }
     fclose(fp);
 }
@@ -116,30 +123,62 @@ void mount_disk(string diskname)
 
     fread(&sb, sizeof(super_block), 1, fp);
 
-    for (int i = 0; i < sb.number_of_inodes; i++)
-    {
-        fread(&inodes[i], sizeof(inode), 1, fp);
-    }
+    inodes = (inode *)malloc(sizeof(inode) * sb.number_of_inodes);
+    disk_blocks = (disk_block *)malloc(sizeof(disk_block) * sb.number_of_diskblocks);
 
-    for (int i = 0; i < sb.number_of_diskblocks; i++)
-    {
-        fread(&disk_blocks[i], sizeof(disk_block), 1, fp);
-    }
+    fread(inodes, sizeof(inode), sb.number_of_inodes, fp);
+
+    fread(disk_blocks, sizeof(disk_block), sb.number_of_diskblocks, fp);
+    printfs(diskname);
 
     fclose(fp);
 
     return;
 }
-
+int empty_inode(){
+    for(int i=0; i<sb.number_of_inodes; i++){
+        if(inodes[i].first_block==-1){
+            return i;
+        }
+    }
+    return -1;
+}
+int empty_disk(){
+    for(int i=0; i<sb.number_of_diskblocks; i++){
+        if(disk_blocks[i].next_block_num==-1){
+            return i;
+        }
+    }
+    return -1;
+}
 void exit_appl()
 {
     exit(0);
     return;
 }
 
-void create_file()
+int create_file(string file_name, string disk_name)
 {
-    return;
+    //find empty inode
+    //claim it
+    // printfs(disk_name);
+    int inode_loc=empty_inode();
+    if(inode_loc==-1){
+        // error
+        cout<<"No free location found for inode\n";
+        return -1;
+    }
+    int disk_loc = empty_disk();
+    if(disk_loc==-1){
+        //error
+        cout<<"No free location found for disk block\n";
+        return -1;
+    }
+    inodes[inode_loc].first_block=disk_loc;
+    strcpy(inodes[inode_loc].name, &file_name[0]);
+    disk_blocks[disk_loc].next_block_num=-2;
+    syncfs(disk_name);
+    return inode_loc;
 }
 
 void open_file()
@@ -225,7 +264,15 @@ int main()
                 cin >> choicey;
                 if (choicey == 1)
                 {
-                    create_file();
+                    string file_name;
+                    cout<<"Enter file name:\n";
+                    cin>>file_name;
+                    int fd = create_file(file_name, disk_name);
+                    if(fd == -1){
+                        continue;
+                    }
+                    cout<<"File created! here is the descriptor: "<<fd<<endl;
+                    printfs(disk_name);
                 }
                 else if (choicey == 2)
                 {
