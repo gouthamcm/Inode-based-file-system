@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <string.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -51,8 +52,26 @@ void create_disk(string name_of_the_disk)
     return;
 }
 
-void mount_disk()
+void syncfs(string diskname){
+    FILE *fp;
+    fp = fopen(&diskname[0], "w+");
+
+    fwrite(&sb, sizeof(super_block), 1, fp);
+
+    for(int i=0; i<sb.number_of_inodes; i++){
+        fwrite(&inodes[i], sizeof(inode), 1, fp);
+    }
+
+    for(int i=0; i<sb.number_of_diskblocks; i++){
+        fwrite(&disk_blocks[i], sizeof(disk_block), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+void mount_disk(string disk_name)
 {
+    
     return;
 }
 
@@ -129,7 +148,9 @@ int main()
         }
         else if (choicex == 2)
         {
-            mount_disk();
+            string disk_name;
+            cin>>disk_name;
+            mount_disk(disk_name);
             while (1)
             {
                 cout << "\n===========================\n";
