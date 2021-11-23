@@ -28,7 +28,23 @@ struct disk_block{
 struct super_block sb;
 struct inode *inodes;
 struct disk_block *disk_blocks;
+void syncfs(string diskname){
 
+    FILE *fp;
+    fp = fopen(&diskname[0], "w+");
+
+    fwrite(&sb, sizeof(super_block), 1, fp);
+
+    for(int i=0; i<sb.number_of_inodes; i++){
+        fwrite(&inodes[i], sizeof(inode), 1, fp);
+    }
+
+    for(int i=0; i<sb.number_of_diskblocks; i++){
+        fwrite(&disk_blocks[i], sizeof(disk_block), 1, fp);
+    }
+
+    fclose(fp);
+}   
 void create_disk(string name_of_the_disk)
 {
     sb.number_of_inodes=10;
@@ -47,30 +63,29 @@ void create_disk(string name_of_the_disk)
         disk_blocks[i].next_block_num=-1;
         // disk_blocks[i].data
     }
-
+    syncfs(name_of_the_disk);
 
     return;
 }
 
-void syncfs(string diskname){
-    FILE *fp;
-    fp = fopen(&diskname[0], "w+");
 
-    fwrite(&sb, sizeof(super_block), 1, fp);
+
+void mount_disk(string diskname)
+{
+    FILE *fp;
+    fp = fopen(&diskname[0], "r");
+
+    fread(&sb, sizeof(super_block), 1, fp);
 
     for(int i=0; i<sb.number_of_inodes; i++){
-        fwrite(&inodes[i], sizeof(inode), 1, fp);
+        fread(&inodes[i], sizeof(inode), 1, fp);
     }
 
     for(int i=0; i<sb.number_of_diskblocks; i++){
-        fwrite(&disk_blocks[i], sizeof(disk_block), 1, fp);
+        fread(&disk_blocks[i], sizeof(disk_block), 1, fp);
     }
 
     fclose(fp);
-}
-
-void mount_disk(string disk_name)
-{
     
     return;
 }
