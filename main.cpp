@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string.h>
 #include <stdio.h>
+#include <map>
 
 using namespace std;
 
@@ -32,7 +33,8 @@ struct disk_block
 struct super_block sb;
 struct inode *inodes;
 struct disk_block *disk_blocks;
-
+map<string, int> file_name_fd;
+map<string, int>::iterator it;
 
 void printfs(string diskname)
 {
@@ -135,17 +137,23 @@ void mount_disk(string diskname)
 
     return;
 }
-int empty_inode(){
-    for(int i=0; i<sb.number_of_inodes; i++){
-        if(inodes[i].first_block==-1){
+int empty_inode()
+{
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
+        if (inodes[i].first_block == -1)
+        {
             return i;
         }
     }
     return -1;
 }
-int empty_disk(){
-    for(int i=0; i<sb.number_of_diskblocks; i++){
-        if(disk_blocks[i].next_block_num==-1){
+int empty_disk()
+{
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
+        if (disk_blocks[i].next_block_num == -1)
+        {
             return i;
         }
     }
@@ -162,26 +170,28 @@ int create_file(string file_name, string disk_name)
     //find empty inode
     //claim it
     // printfs(disk_name);
-    int inode_loc=empty_inode();
-    if(inode_loc==-1){
+    int inode_loc = empty_inode();
+    if (inode_loc == -1)
+    {
         // error
-        cout<<"No free location found for inode\n";
+        cout << "No free location found for inode\n";
         return -1;
     }
     int disk_loc = empty_disk();
-    if(disk_loc==-1){
+    if (disk_loc == -1)
+    {
         //error
-        cout<<"No free location found for disk block\n";
+        cout << "No free location found for disk block\n";
         return -1;
     }
-    inodes[inode_loc].first_block=disk_loc;
+    inodes[inode_loc].first_block = disk_loc;
     strcpy(inodes[inode_loc].name, &file_name[0]);
-    disk_blocks[disk_loc].next_block_num=-2;
+    disk_blocks[disk_loc].next_block_num = -2;
     syncfs(disk_name);
     return inode_loc;
 }
 
-void open_file()
+void open_file(int fd)
 {
     return;
 }
@@ -228,7 +238,9 @@ void unmount()
 
 int main()
 {
-    int choicex, choicey;
+    int choicex, choicey, fd;
+    string file_name;
+    string disk_name;
     while (1)
     {
         cout << "Which operation would you like to perform?\n";
@@ -243,7 +255,7 @@ int main()
         }
         else if (choicex == 2)
         {
-            string disk_name;
+            
             cin >> disk_name;
             mount_disk(disk_name);
             while (1)
@@ -264,19 +276,26 @@ int main()
                 cin >> choicey;
                 if (choicey == 1)
                 {
-                    string file_name;
-                    cout<<"Enter file name:\n";
-                    cin>>file_name;
-                    int fd = create_file(file_name, disk_name);
-                    if(fd == -1){
+                    
+                    cout << "Enter file name:\n";
+                    cin >> file_name;
+                    fd = create_file(file_name, disk_name);
+                    if (fd == -1)
+                    {
                         continue;
                     }
-                    cout<<"File created! here is the descriptor: "<<fd<<endl;
+                    cout << "File created! here is the descriptor: " << fd << endl;
+                    file_name_fd[file_name]=fd;
                     printfs(disk_name);
                 }
                 else if (choicey == 2)
                 {
-                    open_file();
+                    for(it=file_name_fd.begin(); it!=file_name_fd.end(); it++){
+                        cout<<it->first<<" "<<it->second<<endl;
+                    }
+                    cout<<"Choose the file to open\n";
+                    cin>>fd;
+                    open_file(fd);
                 }
                 else if (choicey == 3)
                 {
