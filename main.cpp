@@ -9,18 +9,22 @@
 
 using namespace std;
 
-struct super_block{
+struct super_block
+{
     int number_of_inodes;
     int number_of_diskblocks;
     int size_of_blocks;
 };
 
-struct inode{
+struct inode
+{
     int size;
+    int first_block;
     char name[8];
 };
 
-struct disk_block{
+struct disk_block
+{
     int next_block_num;
     char data[512];
 };
@@ -28,47 +32,82 @@ struct disk_block{
 struct super_block sb;
 struct inode *inodes;
 struct disk_block *disk_blocks;
-void syncfs(string diskname){
+
+void printfs(string diskname){
+    FILE *fp;
+    fp=fopen(&diskname[0], "r");
+    fread(&sb, sizeof(super_block), 1, fp);
+
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
+        fread(&inodes[i], sizeof(inode), 1, fp);
+    }
+
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
+        fread(&disk_blocks[i], sizeof(disk_block), 1, fp);
+    }
+
+    cout<<"Super Block Info\n";
+    cout<<"Number of disk blocks\t"<<sb.number_of_diskblocks<<endl;
+    cout<<"Number of Inodes\t"<<sb.number_of_inodes<<endl;
+    cout<<"Size of blocks\t"<<sb.size_of_blocks<<endl;
+    cout<<"\nINODES\n\n";
+    for(int i=0; i<sb.number_of_inodes; i++){
+        cout<<"size: "<<inodes[i].size<<"\t"<<"first block: "<<inodes[i].first_block<<"\t"<<"name: "<<inodes[i].name<<endl;
+    }
+    cout<<"\nDISK BLOCKS\n\n";
+    for(int i=0; i<sb.number_of_diskblocks; i++){
+        cout<<"Next Block: "<<disk_blocks[i].next_block_num<<"\tData: "<<disk_blocks[i].data<<endl;
+    }
+    fclose(fp);
+}
+
+void syncfs(string diskname)
+{
 
     FILE *fp;
     fp = fopen(&diskname[0], "w+");
 
     fwrite(&sb, sizeof(super_block), 1, fp);
 
-    for(int i=0; i<sb.number_of_inodes; i++){
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
         fwrite(&inodes[i], sizeof(inode), 1, fp);
     }
 
-    for(int i=0; i<sb.number_of_diskblocks; i++){
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
         fwrite(&disk_blocks[i], sizeof(disk_block), 1, fp);
     }
 
     fclose(fp);
-}   
+}
 void create_disk(string name_of_the_disk)
 {
-    sb.number_of_inodes=10;
-    sb.number_of_diskblocks=100;
+    sb.number_of_inodes = 10;
+    sb.number_of_diskblocks = 100;
     sb.size_of_blocks = sizeof(disk_block);
 
-    inodes = (inode*)malloc(sizeof(inode)*sb.number_of_inodes);
-    disk_blocks = (disk_block*)malloc(sizeof(disk_block)*sb.number_of_diskblocks);
+    inodes = (inode *)malloc(sizeof(inode) * sb.number_of_inodes);
+    disk_blocks = (disk_block *)malloc(sizeof(disk_block) * sb.number_of_diskblocks);
 
-    for(int i=0; i<sb.number_of_inodes; i++){
-        inodes[i].size=-1;
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
+        inodes[i].size = -1;
+        inodes[i].first_block = -1;
         strcpy(inodes[i].name, "empty");
     }
 
-    for(int i=0; i<sb.number_of_diskblocks; i++){
-        disk_blocks[i].next_block_num=-1;
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
+        disk_blocks[i].next_block_num = -1;
         // disk_blocks[i].data
     }
     syncfs(name_of_the_disk);
-
+    // printfs(name_of_the_disk);
     return;
 }
-
-
 
 void mount_disk(string diskname)
 {
@@ -77,16 +116,18 @@ void mount_disk(string diskname)
 
     fread(&sb, sizeof(super_block), 1, fp);
 
-    for(int i=0; i<sb.number_of_inodes; i++){
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
         fread(&inodes[i], sizeof(inode), 1, fp);
     }
 
-    for(int i=0; i<sb.number_of_diskblocks; i++){
+    for (int i = 0; i < sb.number_of_diskblocks; i++)
+    {
         fread(&disk_blocks[i], sizeof(disk_block), 1, fp);
     }
 
     fclose(fp);
-    
+
     return;
 }
 
@@ -158,13 +199,13 @@ int main()
         {
             string name_of_the_disk;
             // cout<<
-            cin>>name_of_the_disk;
+            cin >> name_of_the_disk;
             create_disk(name_of_the_disk);
         }
         else if (choicex == 2)
         {
             string disk_name;
-            cin>>disk_name;
+            cin >> disk_name;
             mount_disk(disk_name);
             while (1)
             {
