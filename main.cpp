@@ -56,6 +56,7 @@ struct inode
 struct disk_block
 {
     int next_block_num;
+    int offset;
     char data[BLOCKSIZE];
 };
 
@@ -125,7 +126,8 @@ void printfs(string diskname)
     for (int i = 0; i < sb.number_of_diskblocks; i++)
     {
         cout << "Block No.: " << i << "\t"
-             << "Next Block: " << disk_blocks[i].next_block_num << "\tData: "
+             << "Next Block: " << disk_blocks[i].next_block_num << "\tOffset: "
+             << disk_blocks[i].offset << "\tData: "
              << disk_blocks[i].data << endl;
     }
     fclose(fp);
@@ -163,13 +165,14 @@ void create_disk(string name_of_the_disk)
     for (int i = 0; i < sb.number_of_inodes; i++)
     {
         inodes[i].size = -1;
-        inodes[i].first_block = -1;
+        inodes[i].first_block = 0;
         strcpy(inodes[i].name, "empty");
     }
 
     for (int i = 0; i < sb.number_of_diskblocks; i++)
     {
         disk_blocks[i].next_block_num = -1;
+        disk_blocks[i].offset = -1;
         // disk_blocks[i].data
     }
     syncfs(name_of_the_disk);
@@ -272,7 +275,19 @@ void read_file(int fd)
         cout << "The selected file is not opened for read mode\n";
         return;
     }
-
+    int bn = inodes[fd].first_block;
+    string output;
+    // int i=0;
+    while(disk_blocks[bn].next_block_num!=-2){
+        for(int i=0; i<disk_blocks[bn].offset; i++){
+            output.push_back(disk_blocks[bn].data[i]);
+        }
+        bn=disk_blocks[bn].next_block_num;
+    }
+    for(int i=0; i<disk_blocks[bn].offset; i++){
+        output.push_back(disk_blocks[bn].data[i]);
+    }
+    cout<<output;
     return;
 }
 
@@ -286,28 +301,50 @@ void write_file(int fd)
     // char buffer[BLOCKSIZE];
     string inp = get_user_input();
     int bn = inodes[fd].first_block;
-    int offset;
+    // int offset;
     for (int i = 0; i < inp.length(); i++)
     {
 
-        offset = i % BLOCKSIZE;
-        if (offset == 0 && i != 0)
+        // offset = i % BLOCKSIZE;
+        // if (offset == 0 && i != 0)
+        // {
+        //     if (disk_blocks[bn].next_block_num >= 0)
+        //     {
+        //         bn = disk_blocks[bn].next_block_num;
+        //     }
+        //     else
+        //     {
+        //         bn = empty_disk();
+        //         if (bn == -1)
+        //         {
+        //             cout << "Storage is full\n";
+        //             return;
+        //         }
+        //     }
+        // }
+        
+        if (disk_blocks[bn].offset == BLOCKSIZE)
         {
+            // disk_blocks[bn].offset--; 
             if (disk_blocks[bn].next_block_num >= 0)
             {
-                bn=disk_blocks[bn].next_block_num;
+                bn = disk_blocks[bn].next_block_num;
             }
-            else{
-                bn=empty_disk();
-                if(bn==-1){
-                    cout<<"Storage is full\n";
+            else
+            {
+                bn = empty_disk();
+                if (bn == -1)
+                {
+                    cout << "Storage is full\n";
                     return;
                 }
+                disk_blocks[bn].next_block_num=-2;
             }
         }
-        disk_blocks[bn].data[offset] = inp[i];
-        offset++;
+        disk_blocks[bn].data[disk_blocks[bn].offset] = inp[i];
+        disk_blocks[bn].offset++;
     }
+
     return;
 }
 
@@ -318,7 +355,53 @@ void append_file(int fd)
         cout << "The selected file is not opened for append mode\n";
         return;
     }
+    string inp=get_user_input();
+    int bn = inodes[fd].first_block;
+    while(disk_blocks[bn].next_block_num!=-2){
+        bn=disk_blocks[bn].next_block_num;
+    }
+    for (int i = 0; i < inp.length(); i++)
+    {
 
+        // offset = i % BLOCKSIZE;
+        // if (offset == 0 && i != 0)
+        // {
+        //     if (disk_blocks[bn].next_block_num >= 0)
+        //     {
+        //         bn = disk_blocks[bn].next_block_num;
+        //     }
+        //     else
+        //     {
+        //         bn = empty_disk();
+        //         if (bn == -1)
+        //         {
+        //             cout << "Storage is full\n";
+        //             return;
+        //         }
+        //     }
+        // }
+        
+        if (disk_blocks[bn].offset == BLOCKSIZE)
+        {
+            // disk_blocks[bn].offset--; 
+            if (disk_blocks[bn].next_block_num >= 0)
+            {
+                bn = disk_blocks[bn].next_block_num;
+            }
+            else
+            {
+                bn = empty_disk();
+                if (bn == -1)
+                {
+                    cout << "Storage is full\n";
+                    return;
+                }
+                disk_blocks[bn].next_block_num=-2;
+            }
+        }
+        disk_blocks[bn].data[disk_blocks[bn].offset] = inp[i];
+        disk_blocks[bn].offset++;
+    }
     return;
 }
 
