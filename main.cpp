@@ -417,8 +417,33 @@ void close_file(int fd)
     return;
 }
 
-void delete_file()
+void delete_file(int fd)
 {
+    if(opened_files[fd]){
+        cout<<"File is opened.. please close it before deleting\n";
+        return;
+    }
+    int bn = inodes[fd].first_block;
+    while(disk_blocks[bn].next_block_num!=-2){
+        for(int i=0; i<disk_blocks[bn].offset; i++){
+            strcpy(disk_blocks[bn].data, "");
+        }
+        disk_blocks[bn].offset=-1;
+        int temp=disk_blocks[bn].next_block_num;
+        disk_blocks[bn].next_block_num=-1;
+        bn=temp;
+    }
+    for(int i=0; i<disk_blocks[bn].offset; i++){
+        strcpy(disk_blocks[bn].data, "");
+    }
+    disk_blocks[bn].offset=-1;
+    disk_blocks[bn].next_block_num=-1;
+
+    strcpy(inodes[fd].name,"empty");
+    inodes[fd].first_block=-1;
+    file_name_fd.erase(fd);
+    map_for_file_mode.erase(fd);
+    opened_files.erase(fd);
     return;
 }
 
@@ -552,7 +577,9 @@ int main()
                 }
                 else if (choicey == 7)
                 {
-                    delete_file();
+                    cout << "Choose the fd to close\n";
+                    cin >> fd;
+                    delete_file(fd);
                 }
                 else if (choicey == 8)
                 {
