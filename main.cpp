@@ -7,8 +7,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <map>
-#define BLOCKSIZE 512
 #include <ostream>
+#include <fstream>
+#define BLOCKSIZE 512
+
 namespace Color
 {
     enum Code
@@ -60,9 +62,27 @@ struct disk_block
 struct super_block sb;
 struct inode *inodes;
 struct disk_block *disk_blocks;
-map<string, int> file_name_fd;
-map<string, int>::iterator it;
 
+map<int, string> file_name_fd;
+map<int, bool> opened_files;
+map<int, int> map_for_file_mode;
+map<int, string>::iterator it;
+
+string get_user_input()
+{
+    string input;
+    do
+    {
+        string temp;
+        getline(cin, temp);
+        if (temp == "exit()")
+        {
+            break;
+        }
+        input += (temp + "\n");
+    } while (temp != "\0");
+    return input;
+}
 void printfs(string diskname)
 {
     FILE *fp;
@@ -221,22 +241,50 @@ int create_file(string file_name, string disk_name)
 
 void open_file(int fd)
 {
+    opened_files[fd] = true;
+    int choice;
+    cout << "File has been opened\n";
+    cout << "Choose the mode to open\n";
+    cout << "1. Read mode\n";
+    cout << "2. Write mode\n";
+    cout << "3. Append mode\n";
+    cin >> choice;
+    map_for_file_mode[fd] = choice;
+    cout << "File now opened in the mode specified\n";
+    return;
+}
+
+void read_file(int fd)
+{
+    if (map_for_file_mode[fd] != 1)
+    {
+        cout << "The selected file is not opened for read mode\n";
+        return;
+    }
 
     return;
 }
 
-void read_file()
+void write_file(int fd)
 {
+    if (map_for_file_mode[fd] != 2)
+    {
+        cout << "The selected file is not opened for write mode\n";
+        return;
+    }
+    char buffer[BLOCKSIZE];
+    string inp = get_user_input();
     return;
 }
 
-void write_file()
+void append_file(int fd)
 {
-    return;
-}
+    if (map_for_file_mode[fd] != 3)
+    {
+        cout << "The selected file is not opened for append mode\n";
+        return;
+    }
 
-void append_file()
-{
     return;
 }
 
@@ -325,7 +373,7 @@ int main()
                         continue;
                     }
                     cout << "File created! here is the descriptor: " << fd << endl;
-                    file_name_fd[file_name] = fd;
+                    file_name_fd[fd] = file_name;
                     printfs(disk_name);
                 }
                 else if (choicey == 2)
@@ -334,21 +382,39 @@ int main()
                     {
                         cout << it->first << " " << it->second << endl;
                     }
-                    cout << "Choose the file to open\n";
+                    cout << "Choose the file desciptor to open\n";
                     cin >> fd;
                     open_file(fd);
                 }
                 else if (choicey == 3)
                 {
-                    read_file();
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        cout << it->first << " " << it->second << endl;
+                    }
+                    cout << "Choose the file desciptor to read\n";
+                    cin >> fd;
+                    read_file(fd);
                 }
                 else if (choicey == 4)
                 {
-                    write_file();
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        cout << it->first << " " << it->second << endl;
+                    }
+                    cout << "Choose the file desciptor to write\n";
+                    cin >> fd;
+                    write_file(fd);
                 }
                 else if (choicey == 5)
                 {
-                    append_file();
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        cout << it->first << " " << it->second << endl;
+                    }
+                    cout << "Choose the file desciptor to append\n";
+                    cin >> fd;
+                    append_file(fd);
                 }
                 else if (choicey == 6)
                 {
