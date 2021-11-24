@@ -7,7 +7,34 @@
 #include <string.h>
 #include <stdio.h>
 #include <map>
+#define BLOCKSIZE 512
+#include <ostream>
+namespace Color
+{
+    enum Code
+    {
+        FG_RED = 31,
+        FG_GREEN = 32,
+        FG_BLUE = 34,
+        FG_DEFAULT = 39,
+        BG_RED = 41,
+        BG_GREEN = 42,
+        BG_BLUE = 44,
+        BG_DEFAULT = 49
+    };
+    class Modifier
+    {
+        Code code;
 
+    public:
+        Modifier(Code pCode) : code(pCode) {}
+        friend std::ostream &
+        operator<<(std::ostream &os, const Modifier &mod)
+        {
+            return os << "\033[" << mod.code << "m";
+        }
+    };
+}
 using namespace std;
 
 struct super_block
@@ -27,7 +54,7 @@ struct inode
 struct disk_block
 {
     int next_block_num;
-    char data[512];
+    char data[BLOCKSIZE];
 };
 
 struct super_block sb;
@@ -67,7 +94,8 @@ void printfs(string diskname)
     for (int i = 0; i < sb.number_of_diskblocks; i++)
     {
         cout << "Block No.: " << i << "\t"
-             << "Next Block: " << disk_blocks[i].next_block_num << "\tData: " << disk_blocks[i].data << endl;
+             << "Next Block: " << disk_blocks[i].next_block_num << "\tData: "
+             << disk_blocks[i].data << endl;
     }
     fclose(fp);
 }
@@ -193,6 +221,7 @@ int create_file(string file_name, string disk_name)
 
 void open_file(int fd)
 {
+
     return;
 }
 
@@ -243,6 +272,17 @@ int main()
     string disk_name;
     while (1)
     {
+        Color::Modifier red(Color::FG_RED);
+        Color::Modifier green(Color::FG_GREEN);
+        Color::Modifier blue(Color::FG_BLUE);
+        // Color::Modifier red(Color::FG_RED);
+        Color::Modifier bggreen(Color::BG_GREEN);
+        Color::Modifier bgblue(Color::BG_BLUE);
+        Color::Modifier bgred(Color::BG_RED);
+        Color::Modifier def(Color::FG_DEFAULT);
+        Color::Modifier bgdef(Color::BG_DEFAULT);
+        // cout <<bgblue<< "This ->" << red << "word" << def<<"<- is red." <<bgdef
+        // << endl;
         cout << "Which operation would you like to perform?\n";
         cout << "1. Create Disk\n2. Mount Disk\n3. Exit\n";
         cin >> choicex;
@@ -255,7 +295,7 @@ int main()
         }
         else if (choicex == 2)
         {
-            
+
             cin >> disk_name;
             mount_disk(disk_name);
             while (1)
@@ -276,7 +316,7 @@ int main()
                 cin >> choicey;
                 if (choicey == 1)
                 {
-                    
+
                     cout << "Enter file name:\n";
                     cin >> file_name;
                     fd = create_file(file_name, disk_name);
@@ -285,16 +325,17 @@ int main()
                         continue;
                     }
                     cout << "File created! here is the descriptor: " << fd << endl;
-                    file_name_fd[file_name]=fd;
+                    file_name_fd[file_name] = fd;
                     printfs(disk_name);
                 }
                 else if (choicey == 2)
                 {
-                    for(it=file_name_fd.begin(); it!=file_name_fd.end(); it++){
-                        cout<<it->first<<" "<<it->second<<endl;
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        cout << it->first << " " << it->second << endl;
                     }
-                    cout<<"Choose the file to open\n";
-                    cin>>fd;
+                    cout << "Choose the file to open\n";
+                    cin >> fd;
                     open_file(fd);
                 }
                 else if (choicey == 3)
