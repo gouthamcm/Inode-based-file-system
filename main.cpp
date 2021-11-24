@@ -66,21 +66,32 @@ struct disk_block *disk_blocks;
 map<int, string> file_name_fd;
 map<int, bool> opened_files;
 map<int, int> map_for_file_mode;
+
 map<int, string>::iterator it;
+
+Color::Modifier red(Color::FG_RED);
+Color::Modifier green(Color::FG_GREEN);
+Color::Modifier blue(Color::FG_BLUE);
+// Color::Modifier red(Color::FG_RED);
+Color::Modifier bggreen(Color::BG_GREEN);
+Color::Modifier bgblue(Color::BG_BLUE);
+Color::Modifier bgred(Color::BG_RED);
+Color::Modifier def(Color::FG_DEFAULT);
+Color::Modifier bgdef(Color::BG_DEFAULT);
 
 string get_user_input()
 {
     string input;
+    string temp;
     do
     {
-        string temp;
         getline(cin, temp);
         if (temp == "exit()")
         {
             break;
         }
         input += (temp + "\n");
-    } while (temp != "\0");
+    } while (temp != "exit()");
     return input;
 }
 void printfs(string diskname)
@@ -272,8 +283,31 @@ void write_file(int fd)
         cout << "The selected file is not opened for write mode\n";
         return;
     }
-    char buffer[BLOCKSIZE];
+    // char buffer[BLOCKSIZE];
     string inp = get_user_input();
+    int bn = inodes[fd].first_block;
+    int offset;
+    for (int i = 0; i < inp.length(); i++)
+    {
+
+        offset = i % BLOCKSIZE;
+        if (offset == 0 && i != 0)
+        {
+            if (disk_blocks[bn].next_block_num >= 0)
+            {
+                bn=disk_blocks[bn].next_block_num;
+            }
+            else{
+                bn=empty_disk();
+                if(bn==-1){
+                    cout<<"Storage is full\n";
+                    return;
+                }
+            }
+        }
+        disk_blocks[bn].data[offset] = inp[i];
+        offset++;
+    }
     return;
 }
 
@@ -318,17 +352,10 @@ int main()
     int choicex, choicey, fd;
     string file_name;
     string disk_name;
+    // get_user_input();
     while (1)
     {
-        Color::Modifier red(Color::FG_RED);
-        Color::Modifier green(Color::FG_GREEN);
-        Color::Modifier blue(Color::FG_BLUE);
-        // Color::Modifier red(Color::FG_RED);
-        Color::Modifier bggreen(Color::BG_GREEN);
-        Color::Modifier bgblue(Color::BG_BLUE);
-        Color::Modifier bgred(Color::BG_RED);
-        Color::Modifier def(Color::FG_DEFAULT);
-        Color::Modifier bgdef(Color::BG_DEFAULT);
+
         // cout <<bgblue<< "This ->" << red << "word" << def<<"<- is red." <<bgdef
         // << endl;
         cout << "Which operation would you like to perform?\n";
