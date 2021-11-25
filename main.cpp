@@ -93,7 +93,7 @@ string get_user_input()
         }
         input += (temp + "\n");
     } while (temp != "exit()");
-    
+
     return input;
 }
 void printfs(string diskname)
@@ -477,7 +477,7 @@ void list_of_files()
 
 void list_of_opened_files()
 {
-    if(file_name_fd.size()==0){
+    if(opened_files.size()==0){
         cout<<"No files are opened at this moment\n";
     }
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
@@ -556,10 +556,10 @@ int main()
                     fd = create_file(file_name, disk_name);
                     if (fd == -1)
                     {
-                        cout << "Couldn't create the file\n";
+                        cout <<red<< "Couldn't create the file\n"<<def;
                         continue;
                     }
-                    cout << "File created! here is the descriptor: " << fd << endl;
+                    cout <<green<< "File created! here is the descriptor: " << fd <<def<< endl;
                     file_name_fd[fd] = file_name;
                     printfs(disk_name);
                 }
@@ -655,7 +655,7 @@ int main()
                 else
                 {
                     cout << "Wrong choice.. enter again\n";
-                    break;
+                    continue;
                 }
             }
         }
@@ -667,6 +667,7 @@ int main()
         else
         {
             cout << "Wrong choice.. enter again\n";
+            continue;
         }
     }
     return 0;
