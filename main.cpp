@@ -93,6 +93,7 @@ string get_user_input()
         }
         input += (temp + "\n");
     } while (temp != "exit()");
+    
     return input;
 }
 void printfs(string diskname)
@@ -176,6 +177,7 @@ void create_disk(string name_of_the_disk)
         // disk_blocks[i].data
     }
     syncfs(name_of_the_disk);
+    cout << "Disk created successfully\n";
     // printfs(name_of_the_disk);
     return;
 }
@@ -193,7 +195,16 @@ void mount_disk(string diskname)
     fread(inodes, sizeof(inode), sb.number_of_inodes, fp);
 
     fread(disk_blocks, sizeof(disk_block), sb.number_of_diskblocks, fp);
-    printfs(diskname);
+    for (int i = 0; i < sb.number_of_inodes; i++)
+    {
+        if (inodes[i].first_block != -1)
+        {
+            file_name_fd[i] = inodes[i].name;
+            opened_files[i] = false;
+            map_for_file_mode[i] = -1;
+        }
+    }
+    // printfs(diskname);
 
     fclose(fp);
 
@@ -250,6 +261,7 @@ int create_file(string file_name, string disk_name)
     strcpy(inodes[inode_loc].name, &file_name[0]);
     disk_blocks[disk_loc].next_block_num = -2;
     syncfs(disk_name);
+
     return inode_loc;
 }
 
@@ -419,28 +431,32 @@ void close_file(int fd)
 
 void delete_file(int fd)
 {
-    if(opened_files[fd]){
-        cout<<"File is opened.. please close it before deleting\n";
+    if (opened_files[fd])
+    {
+        cout << "File is opened.. please close it before deleting\n";
         return;
     }
     int bn = inodes[fd].first_block;
-    while(disk_blocks[bn].next_block_num!=-2){
-        for(int i=0; i<disk_blocks[bn].offset; i++){
+    while (disk_blocks[bn].next_block_num != -2)
+    {
+        for (int i = 0; i < disk_blocks[bn].offset; i++)
+        {
             strcpy(disk_blocks[bn].data, "");
         }
-        disk_blocks[bn].offset=-1;
-        int temp=disk_blocks[bn].next_block_num;
-        disk_blocks[bn].next_block_num=-1;
-        bn=temp;
+        disk_blocks[bn].offset = -1;
+        int temp = disk_blocks[bn].next_block_num;
+        disk_blocks[bn].next_block_num = -1;
+        bn = temp;
     }
-    for(int i=0; i<disk_blocks[bn].offset; i++){
+    for (int i = 0; i < disk_blocks[bn].offset; i++)
+    {
         strcpy(disk_blocks[bn].data, "");
     }
-    disk_blocks[bn].offset=-1;
-    disk_blocks[bn].next_block_num=-1;
+    disk_blocks[bn].offset = -1;
+    disk_blocks[bn].next_block_num = -1;
 
-    strcpy(inodes[fd].name,"empty");
-    inodes[fd].first_block=-1;
+    strcpy(inodes[fd].name, "empty");
+    inodes[fd].first_block = -1;
     file_name_fd.erase(fd);
     map_for_file_mode.erase(fd);
     opened_files.erase(fd);
@@ -449,6 +465,9 @@ void delete_file(int fd)
 
 void list_of_files()
 {
+    if(file_name_fd.size()==0){
+        cout<<"No files have been created yet\n";
+    }
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
     {
         cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
@@ -458,6 +477,9 @@ void list_of_files()
 
 void list_of_opened_files()
 {
+    if(file_name_fd.size()==0){
+        cout<<"No files are opened at this moment\n";
+    }
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
     {
         if (opened_files[it->first])
@@ -468,8 +490,18 @@ void list_of_opened_files()
     return;
 }
 
-void unmount()
+void unmount(string diskname)
 {
+    syncfs(diskname);
+    map_for_file_mode.clear();
+    file_name_fd.clear();
+    opened_files.clear();
+    // for(int i=0; i<sb.number_of_inodes; i++){
+    //     free(&inodes[i]);
+    // }
+    // for(int i=0; i<sb.number_of_diskblocks; i++){
+    //     free(&disk_blocks[i]);
+    // }
     return;
 }
 
@@ -491,12 +523,13 @@ int main()
         {
             string name_of_the_disk;
             // cout<<
+            cout << "Enter the disk name\n";
             cin >> name_of_the_disk;
             create_disk(name_of_the_disk);
         }
         else if (choicex == 2)
         {
-
+            cout << "Enter the disk name\n";
             cin >> disk_name;
             mount_disk(disk_name);
             while (1)
@@ -523,6 +556,7 @@ int main()
                     fd = create_file(file_name, disk_name);
                     if (fd == -1)
                     {
+                        cout << "Couldn't create the file\n";
                         continue;
                     }
                     cout << "File created! here is the descriptor: " << fd << endl;
@@ -543,7 +577,10 @@ int main()
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
-                        cout << it->first << " " << it->second << endl;
+                        if (opened_files[it->first])
+                        {
+                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                        }
                     }
                     cout << "Choose the file desciptor to read\n";
                     cin >> fd;
@@ -553,7 +590,10 @@ int main()
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
-                        cout << it->first << " " << it->second << endl;
+                        if (opened_files[it->first])
+                        {
+                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                        }
                     }
                     cout << "Choose the file desciptor to write\n";
                     cin >> fd;
@@ -563,7 +603,10 @@ int main()
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
-                        cout << it->first << " " << it->second << endl;
+                        if (opened_files[it->first])
+                        {
+                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                        }
                     }
                     cout << "Choose the file desciptor to append\n";
                     cin >> fd;
@@ -571,18 +614,31 @@ int main()
                 }
                 else if (choicey == 6)
                 {
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        if (opened_files[it->first])
+                        {
+                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                        }
+                    }
                     cout << "Choose the fd to close\n";
                     cin >> fd;
                     close_file(fd);
                 }
                 else if (choicey == 7)
                 {
-                    cout << "Choose the fd to close\n";
+                    for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
+                    {
+                        cout << it->first << " " << it->second << endl;
+                    }
+                    cout << "Choose the fd to delete\n";
                     cin >> fd;
                     delete_file(fd);
+                    cout<<"File deleted successfully\n";
                 }
                 else if (choicey == 8)
                 {
+
                     list_of_files();
                 }
                 else if (choicey == 9)
@@ -591,12 +647,15 @@ int main()
                 }
                 else if (choicey == 10)
                 {
-                    unmount();
+                    cout<<"Enter the disk name\n";
+                    unmount(disk_name);
+                    cout<<"Disk unmounted successfully\n";
                     break;
                 }
                 else
                 {
                     cout << "Wrong choice.. enter again\n";
+                    break;
                 }
             }
         }
