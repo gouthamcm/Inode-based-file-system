@@ -87,8 +87,10 @@ string get_user_input()
     do
     {
         getline(cin, temp);
+        
         if (temp == "exit()")
         {
+
             break;
         }
         input += (temp + "\n");
@@ -177,7 +179,7 @@ void create_disk(string name_of_the_disk)
         // disk_blocks[i].data
     }
     syncfs(name_of_the_disk);
-    cout << "Disk created successfully\n";
+    cout <<green<< "\nDisk created successfully\n\n"<<def;
     // printfs(name_of_the_disk);
     return;
 }
@@ -205,7 +207,7 @@ void mount_disk(string diskname)
         }
     }
     // printfs(diskname);
-
+    cout<<green<<"\nDisk mounted successfully\n\n"<<def;
     fclose(fp);
 
     return;
@@ -274,7 +276,14 @@ void open_file(int fd)
     cout << "1. Read mode\n";
     cout << "2. Write mode\n";
     cout << "3. Append mode\n";
-    cin >> choice;
+    cin>>choice;
+    if (choice != 1 && choice != 2 && choice != 3)
+    {
+        cout << red << "Please choose the right mode\n"
+             << def;
+        return;
+    }
+    // cin >> choice;
     map_for_file_mode[fd] = choice;
     cout << "File now opened in the mode specified\n";
     return;
@@ -284,7 +293,7 @@ void read_file(int fd)
 {
     if (map_for_file_mode[fd] != 1)
     {
-        cout << "The selected file is not opened for read mode\n";
+        cout <<red<< "The selected file is not opened for read mode\n"<<def;
         return;
     }
     int bn = inodes[fd].first_block;
@@ -310,7 +319,7 @@ void write_file(int fd)
 {
     if (map_for_file_mode[fd] != 2)
     {
-        cout << "The selected file is not opened for write mode\n";
+        cout <<red<< "The selected file is not opened for write mode\n"<<def;
         return;
     }
     // char buffer[BLOCKSIZE];
@@ -367,7 +376,7 @@ void append_file(int fd)
 {
     if (map_for_file_mode[fd] != 3)
     {
-        cout << "The selected file is not opened for append mode\n";
+        cout <<red<< "The selected file is not opened for append mode\n"<<def;
         return;
     }
     string inp = get_user_input();
@@ -425,16 +434,18 @@ void close_file(int fd)
 {
     map_for_file_mode[fd] = -1;
     opened_files[fd] = false;
-    cout << "File closed successfully\n";
+    cout << green << "File closed successfully\n"
+         << def;
     return;
 }
 
-void delete_file(int fd)
+int delete_file(int fd)
 {
     if (opened_files[fd])
     {
-        cout << "File is opened.. please close it before deleting\n";
-        return;
+        cout << red << "File is opened.. please close it before deleting\n"
+             << def;
+        return 0;
     }
     int bn = inodes[fd].first_block;
     while (disk_blocks[bn].next_block_num != -2)
@@ -460,33 +471,40 @@ void delete_file(int fd)
     file_name_fd.erase(fd);
     map_for_file_mode.erase(fd);
     opened_files.erase(fd);
-    return;
+    return 1;
 }
 
 void list_of_files()
 {
-    if(file_name_fd.size()==0){
-        cout<<"No files have been created yet\n";
+    if (file_name_fd.size() == 0)
+    {
+        cout << "No files have been created yet\n";
     }
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
     {
-        cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+        cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
     }
     return;
 }
 
 void list_of_opened_files()
 {
-    if(opened_files.size()==0){
-        cout<<"No files are opened at this moment\n";
-    }
+    int count=0;
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
     {
         if (opened_files[it->first])
         {
-            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+            cout <<blue<< "File: " << it->second << "\tFile Descriptor: " << it->first <<def<< endl;
+            count++;
         }
+        
     }
+
+    if (count==0)
+    {
+        cout << "No files are opened at this moment\n";
+    }
+
     return;
 }
 
@@ -507,7 +525,8 @@ void unmount(string diskname)
 
 int main()
 {
-    int choicex, choicey, fd;
+    string choicex, choicey;
+    int fd;
     string file_name;
     string disk_name;
     // get_user_input();
@@ -519,7 +538,7 @@ int main()
         cout << "Which operation would you like to perform?\n";
         cout << "1. Create Disk\n2. Mount Disk\n3. Exit\n";
         cin >> choicex;
-        if (choicex == 1)
+        if (choicex == "1")
         {
             string name_of_the_disk;
             // cout<<
@@ -527,7 +546,7 @@ int main()
             cin >> name_of_the_disk;
             create_disk(name_of_the_disk);
         }
-        else if (choicex == 2)
+        else if (choicex == "2")
         {
             cout << "Enter the disk name\n";
             cin >> disk_name;
@@ -548,7 +567,7 @@ int main()
                 cout << "===========================\n\n";
 
                 cin >> choicey;
-                if (choicey == 1)
+                if (choicey == "1")
                 {
 
                     cout << "Enter file name:\n";
@@ -556,117 +575,126 @@ int main()
                     fd = create_file(file_name, disk_name);
                     if (fd == -1)
                     {
-                        cout <<red<< "Couldn't create the file\n"<<def;
+                        cout << red << "Couldn't create the file\n"
+                             << def;
                         continue;
                     }
-                    cout <<green<< "File created! here is the descriptor: " << fd <<def<< endl;
+                    cout << green << "File created! here is the descriptor: " << fd << def << endl;
                     file_name_fd[fd] = file_name;
-                    printfs(disk_name);
+                    // printfs(disk_name);
                 }
-                else if (choicey == 2)
+                else if (choicey == "2")
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
-                        cout << it->first << " " << it->second << endl;
+
+                        cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                     }
                     cout << "Choose the file desciptor to open\n";
                     cin >> fd;
                     open_file(fd);
                 }
-                else if (choicey == 3)
+                else if (choicey == "3")
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
                         if (opened_files[it->first])
                         {
-                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                         }
                     }
                     cout << "Choose the file desciptor to read\n";
                     cin >> fd;
                     read_file(fd);
                 }
-                else if (choicey == 4)
+                else if (choicey == "4")
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
                         if (opened_files[it->first])
                         {
-                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                         }
                     }
                     cout << "Choose the file desciptor to write\n";
                     cin >> fd;
                     write_file(fd);
                 }
-                else if (choicey == 5)
+                else if (choicey == "5")
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
                         if (opened_files[it->first])
                         {
-                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                         }
                     }
                     cout << "Choose the file desciptor to append\n";
                     cin >> fd;
                     append_file(fd);
                 }
-                else if (choicey == 6)
+                else if (choicey == "6")
                 {
+
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
                         if (opened_files[it->first])
                         {
-                            cout << "File: " << it->second << "\tFile Descriptor: " << it->first << endl;
+                            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                         }
                     }
                     cout << "Choose the fd to close\n";
                     cin >> fd;
                     close_file(fd);
                 }
-                else if (choicey == 7)
+                else if (choicey == "7")
                 {
                     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
                     {
-                        cout << it->first << " " << it->second << endl;
+                        cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
                     }
                     cout << "Choose the fd to delete\n";
                     cin >> fd;
-                    delete_file(fd);
-                    cout<<"File deleted successfully\n";
+                    if (delete_file(fd))
+                    {
+                        cout << green << "File deleted successfully\n"
+                             << def;
+                    }
                 }
-                else if (choicey == 8)
+                else if (choicey == "8")
                 {
 
                     list_of_files();
                 }
-                else if (choicey == 9)
+                else if (choicey == "9")
                 {
                     list_of_opened_files();
                 }
-                else if (choicey == 10)
+                else if (choicey == "10")
                 {
-                    cout<<"Enter the disk name\n";
+                    cout << "Enter the disk name\n";
                     unmount(disk_name);
-                    cout<<"Disk unmounted successfully\n";
+                    cout << green << "Disk unmounted successfully\n"
+                         << def;
                     break;
                 }
                 else
                 {
-                    cout << "Wrong choice.. enter again\n";
+                    cout << red << "Wrong choice.. enter again\n"
+                         << def;
                     continue;
                 }
             }
         }
-        else if (choicex == 3)
+        else if (choicex == "3")
         {
             exit_appl();
             break;
         }
         else
         {
-            cout << "Wrong choice.. enter again\n";
+            cout << red << "Wrong choice.. enter again\n"
+                 << def;
             continue;
         }
     }
