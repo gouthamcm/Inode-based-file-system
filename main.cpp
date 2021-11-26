@@ -9,7 +9,7 @@
 #include <map>
 #include <ostream>
 #include <fstream>
-#define BLOCKSIZE 512
+#define BLOCKSIZE 4096
 
 namespace Color
 {
@@ -163,8 +163,8 @@ void syncfs(string diskname)
 }
 void create_disk(string name_of_the_disk)
 {
-    sb.number_of_inodes = 10;
-    sb.number_of_diskblocks = 100;
+    sb.number_of_inodes = 65536;
+    sb.number_of_diskblocks = 122071;
     sb.size_of_blocks = sizeof(disk_block);
 
     inodes = (inode *)malloc(sizeof(inode) * sb.number_of_inodes);
@@ -350,7 +350,7 @@ void write_file(int fd)
     }
     disk_blocks[bn].offset=0;
     bn=inodes[fd].first_block;
-    cout<<inp;
+    // cout<<inp;
     for (int i = 0; i < inp.length(); i++)
     {
 
@@ -520,7 +520,15 @@ void list_of_opened_files()
     {
         if (opened_files[it->first])
         {
-            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
+            string mode;
+            if(map_for_file_mode[it->first]==1){
+                mode="READ";
+            }else if(map_for_file_mode[it->first]==2){
+                mode="WRITE";
+            }else{
+                mode="APPEND";
+            }
+            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first <<"\tFile mode: "<<mode<<def << endl;
             count++;
         }
     }
@@ -697,7 +705,8 @@ int main()
                 }
                 else if (choicey == "10")
                 {
-                    cout << "Enter the disk name\n";
+                    // cout << "Enter the disk name\n";
+                    // cin>>disk_name;
                     unmount(disk_name);
                     cout << green << "Disk unmounted successfully\n"
                          << def;
