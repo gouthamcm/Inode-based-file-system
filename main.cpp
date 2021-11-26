@@ -87,16 +87,21 @@ string get_user_input()
     do
     {
         getline(cin, temp);
-        
-        if (temp == "exit()")
-        {
-
+        if(temp.length() > 6 && temp.substr(temp.length()-6)=="exit()"){
+            input+=temp.substr(0, temp.length()-6);
             break;
         }
-        input += (temp + "\n");
+        if (temp == "exit()")
+        {
+            
+            break;
+        }
+        input += (temp + '\n');
     } while (temp != "exit()");
-
-    return input;
+    // input.pop_back();
+    // input.pop_back();
+    // cout<<input[0];
+    return input.substr(1, input.length()-1);
 }
 void printfs(string diskname)
 {
@@ -179,7 +184,8 @@ void create_disk(string name_of_the_disk)
         // disk_blocks[i].data
     }
     syncfs(name_of_the_disk);
-    cout <<green<< "\nDisk created successfully\n\n"<<def;
+    cout << green << "\nDisk created successfully\n\n"
+         << def;
     // printfs(name_of_the_disk);
     return;
 }
@@ -207,7 +213,8 @@ void mount_disk(string diskname)
         }
     }
     // printfs(diskname);
-    cout<<green<<"\nDisk mounted successfully\n\n"<<def;
+    cout << green << "\nDisk mounted successfully\n\n"
+         << def;
     fclose(fp);
 
     return;
@@ -276,7 +283,7 @@ void open_file(int fd)
     cout << "1. Read mode\n";
     cout << "2. Write mode\n";
     cout << "3. Append mode\n";
-    cin>>choice;
+    cin >> choice;
     if (choice != 1 && choice != 2 && choice != 3)
     {
         cout << red << "Please choose the right mode\n"
@@ -293,12 +300,14 @@ void read_file(int fd)
 {
     if (map_for_file_mode[fd] != 1)
     {
-        cout <<red<< "The selected file is not opened for read mode\n"<<def;
+        cout << red << "The selected file is not opened for read mode\n"
+             << def;
         return;
     }
     int bn = inodes[fd].first_block;
     string output;
     // int i=0;
+
     while (disk_blocks[bn].next_block_num != -2)
     {
         for (int i = 0; i < disk_blocks[bn].offset; i++)
@@ -319,13 +328,29 @@ void write_file(int fd)
 {
     if (map_for_file_mode[fd] != 2)
     {
-        cout <<red<< "The selected file is not opened for write mode\n"<<def;
+        cout << red << "The selected file is not opened for write mode\n"
+             << def;
         return;
     }
     // char buffer[BLOCKSIZE];
     string inp = get_user_input();
     int bn = inodes[fd].first_block;
     // int offset;
+    while (disk_blocks[bn].next_block_num != -2)
+    {
+        for(int i=0; i<disk_blocks[bn].offset; i++){
+            strcpy(&disk_blocks[bn].data[i],"");
+        }
+        disk_blocks[bn].offset=-1;
+        bn = disk_blocks[bn].next_block_num;
+    }
+    for (int i = 0; i < disk_blocks[bn].offset; i++)
+    {
+        strcpy(&disk_blocks[bn].data[i], "");
+    }
+    disk_blocks[bn].offset=0;
+    bn=inodes[fd].first_block;
+    cout<<inp;
     for (int i = 0; i < inp.length(); i++)
     {
 
@@ -376,7 +401,8 @@ void append_file(int fd)
 {
     if (map_for_file_mode[fd] != 3)
     {
-        cout <<red<< "The selected file is not opened for append mode\n"<<def;
+        cout << red << "The selected file is not opened for append mode\n"
+             << def;
         return;
     }
     string inp = get_user_input();
@@ -489,18 +515,17 @@ void list_of_files()
 
 void list_of_opened_files()
 {
-    int count=0;
+    int count = 0;
     for (it = file_name_fd.begin(); it != file_name_fd.end(); it++)
     {
         if (opened_files[it->first])
         {
-            cout <<blue<< "File: " << it->second << "\tFile Descriptor: " << it->first <<def<< endl;
+            cout << blue << "File: " << it->second << "\tFile Descriptor: " << it->first << def << endl;
             count++;
         }
-        
     }
 
-    if (count==0)
+    if (count == 0)
     {
         cout << "No files are opened at this moment\n";
     }
